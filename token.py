@@ -1,13 +1,18 @@
 from keys import *
+from generic_error import LexerError
 
 class Lexer:
     def __init__(self,text) -> None:
         self.text=text  
         self.pos = 0
         self.current_char=self.text[self.pos]
+        # token line number and column number
+        self.lineno=1
+        self.column=1
 
     def error(self):
-        raise Exception('输入错误的内容')
+        s=f'Lexer error on: {self.current_char} line:{self.lineno} column:{self.column}'
+        raise LexerError(message=s)
 
     # 获取token
     def get_next_token(self):
@@ -22,45 +27,52 @@ class Lexer:
                 continue
             if self.current_char.isdigit():
                 return self.number()
-            if self.current_char == '+':
-                self.advance()
-                return Token(PLUS,char)
-            if self.current_char == '-':
-                self.advance()
-                return Token(MINUS,char)
-            if self.current_char == '*':
-                self.advance()
-                return Token(MUL,char)
-            if self.current_char == '/':
-                self.advance()
-                return Token(FLOAT_DIV,char)
-            if self.current_char == '(':
-                self.advance()
-                return Token(LPAREN,char)
-            if self.current_char == ')':
-                self.advance()
-                return Token(RPAREN,char)
-
             if self.current_char.isalpha():
                 return  self._id()
             if self.current_char ==':' and self.peek() =='=':
                 self.advance()
                 self.advance()
                 return Token(ASSIGN,':=')
-            if self.current_char == ';':
-                self.advance()
-                return Token(SEMI,';')
-            if self.current_char == ',':
-                self.advance()
-                return Token(COMMA,',')
-            if self.current_char == ':':
-                self.advance()
-                return Token(COLON,':')
-            if self.current_char == '.':
-                self.advance()
-                return Token(DOT,'.')
-            else:
+            # if self.current_char == '+':
+            #     self.advance()
+            #     return Token(PLUS,char)
+            # if self.current_char == '-':
+            #     self.advance()
+            #     return Token(MINUS,char)
+            # if self.current_char == '*':
+            #     self.advance()
+            #     return Token(MUL,char)
+            # if self.current_char == '/':
+            #     self.advance()
+            #     return Token(FLOAT_DIV,char)
+            # if self.current_char == '(':
+            #     self.advance()
+            #     return Token(LPAREN,char)
+            # if self.current_char == ')':
+            #     self.advance()
+            #     return Token(RPAREN,char)
+            
+            # if self.current_char == ';':
+            #     self.advance()
+            #     return Token(SEMI,';')
+            # if self.current_char == ',':
+            #     self.advance()
+            #     return Token(COMMA,',')
+            # if self.current_char == ':':
+            #     self.advance()
+            #     return Token(COLON,':')
+            # if self.current_char == '.':
+            #     self.advance()
+            #     return Token(DOT,'.')
+            try:
+                token_type = TokenType(self.current_char)
+            except ValueError:
                 self.error()
+            
+            else:
+                token = Token(token_type,token_type.value,self.lineno,self.column)
+                self.advance()
+                return token
         return Token(EOF,None)
 
     def peek(self):
@@ -72,11 +84,15 @@ class Lexer:
 
     # 获取下一个字符
     def advance(self):
+        if self.current_char =='\n':
+            self.lineno+=1
+            self.column =0
         self.pos +=1
         if self.pos >=len(self.text):
             self.current_char=None
         else:
             self.current_char = self.text[self.pos]
+            self.column +=1
 
     # 跳过空格
     def skip_whitespace(self):

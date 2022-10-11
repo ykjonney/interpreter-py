@@ -1,6 +1,7 @@
 
 # -*- coding: utf-8 -*-  
 # from __future__ import absolute_import
+import argparse
 import os
 from keys import *
 
@@ -9,8 +10,7 @@ os.chdir('.')
 from token import  Lexer
 from symbol_table import NodeVisitor, SourceToSourceCompiler
 from ast_parser import Parser
-
-
+from . import _SHOULD_LOG_SCOPE
 
 
 class Interpreter(NodeVisitor):
@@ -123,6 +123,12 @@ def main():
 begin { Main }
 end.  { Main }
     '''
+    parser = argparse.ArgumentParser(description='SPI - Simple Pascal Interpreter')
+    parser.add_argument('inputfile',help='Pascal source file')
+    parser.add_argument('--scope',help='Print scope information',action='store_true',)
+    args = parser.parse_args()
+    global _SHOULD_LOG_SCOPE
+    _SHOULD_LOG_SCOPE = args.scope
     lexer = Lexer(text)
     parser = Parser(lexer)
     semantic = SourceToSourceCompiler()

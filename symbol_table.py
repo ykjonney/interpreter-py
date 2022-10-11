@@ -1,5 +1,9 @@
 from collections import OrderedDict
 
+from . import _SHOULD_LOG_SCOPE
+
+from generic_error import ErrorCode, SemanticError
+
 
 
 
@@ -100,6 +104,17 @@ class SourceToSourceCompiler(NodeVisitor):# 修改语义分析器为源到源编
     def __init__(self) -> None:
         self.current_scope = None
         self.output = None  # 添加输出内容变量
+    
+    def error(self, error_code, token):
+        raise SemanticError(
+            error_code=error_code,
+            token=token,
+            message=f'{error_code.value} -> {token}',
+        )
+
+    def log(self, msg):
+        if _SHOULD_LOG_SCOPE:
+            print(msg)
 
     def visit_BinOperator(self, node):
         left = self.visit(node.left)
@@ -174,7 +189,7 @@ class SourceToSourceCompiler(NodeVisitor):# 修改语义分析器为源到源编
         var_name = node.name
         var_symbol = self.current_scope.lookup(var_name)
         if var_symbol is None:  # 如果变量未声明
-            raise NameError(f'引用了不存在的标识符：{repr(var_name)}')  # 抛出语义错误
+            self.error(error_code=ErrorCode.ID_NOT_FOUND, token=node.token)  # 抛出语义错误
         return f'<{var_name}{self.current_scope.scope_level}:{var_symbol.symbol_type}>'  # 返回变量信息内容
 
     def visit_VarDecl(self, node):  # 添加访问变量声明的方法
@@ -182,7 +197,7 @@ class SourceToSourceCompiler(NodeVisitor):# 修改语义分析器为源到源编
         self.current_scope.lookup(symbol_type)  # 从符号表查询内置类型符号
         var_name = node.var_node.name
         if self.current_scope.lookup(var_name,current_scope_only=True) is not None:  # 查询变量名称，如果存在变量信息
-            raise Exception(f'错误：发现重复的标识符：{var_name}')  # 抛出异常
+            self.error(ErrorCode.DUPLICATE_ID,node.var_node.token)   # 抛出异常
         var_symbol = VarSymbol(var_name, symbol_type)
         self.current_scope.insert(var_symbol)
         return f'   var {var_name}{self.current_scope.scope_level} : {symbol_type}' # 返回变量声明信息
@@ -198,5 +213,7 @@ class SourceToSourceCompiler(NodeVisitor):# 修改语义分析器为源到源编
 
     def visit_NoOperator(self, node):  # 添加与访问变量声明相关的访问方法
         pass
-
+    
+    def visit_UnaryOp(self, node):
+        pass
     
