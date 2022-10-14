@@ -65,6 +65,13 @@ class ProcedureDecl(AST):  # 添加过程声明节点
         self.block_node = block_node  # 块节点
         self.params = params #参数
 
+class ProcedureCall(AST):
+    def __init__(self,proc_name,actual_params,token) -> None:
+        self.proc_name = proc_name
+        self.actual_params = actual_params
+        self.token = token
+        self.proc_symbol = None
+
 class Param(AST):
     def __init__(self,var_name,var_type) -> None:
         self.var_name = var_name
@@ -156,8 +163,16 @@ class Parser:
         return node
 
     def statement(self):# 添加获取语句节点的方法
+        '''
+        statement : compound_statement
+          | proccall_statement
+          | assignment_statement
+          | empty
+        '''
         if self.current_token.value_type == TokenType.BEGIN:
             node = self.compound_statement()
+        elif self.current_token.value_type == TokenType.ID and self.lexer.current_char=='(':
+            node = self.proccall_statement()
         elif self.current_token.value_type == TokenType.ID:
             node = self.assignment_statement()
         else:
@@ -229,16 +244,39 @@ class Parser:
         self.eat(TokenType.ID)
         params = []
 
-        if self.current_token.type == TokenType.LPAREN:
+        if self.current_token.value_type == TokenType.LPAREN:
             self.eat(TokenType.LPAREN)
             params = self.formal_parameter_list()
             self.eat(TokenType.RPAREN)
 
         self.eat(TokenType.SEMI)
         block_node = self.block()
-        proc_decl = ProcedureDecl(proc_name, params, block_node)
+        proc_decl = ProcedureDecl(proc_name, block_node, params)
         self.eat(TokenType.SEMI)
         return proc_decl
+
+    def proccall_statement(self):
+        '''proccall_statement : ID LPAREN (expr (COMMA expr)*)? RPAREN'''
+        token = self.current_token
+        proc_name = self.current_token.value
+        self.eat(TokenType.ID)
+        self.eat(TokenType.LPAREN)
+        actual_params=[]
+        if self.current_token.value_type != TokenType.RPAREN:
+            node = self.expr()
+            actual_params.append(node)
+        while self.current_token.value_type == TokenType.COMMA:
+            self.eat(TokenType.COMMA)
+            node = self.expr()
+            actual_params.append(node)
+        self.eat(TokenType.RPAREN)
+        node = ProcedureCall(
+                proc_name=proc_name,
+                actual_params= actual_params,
+                token=token
+        )
+        return node
+    
 
     def formal_parameter_list(self):# 添加创建参数列表节点的方法
         if self.current_token.value_type != TokenType.ID:
@@ -284,7 +322,6 @@ class Parser:
 
     # 定义辅助运算的方法，此方法用于验证记号对象的值类型是否符合运算要求。
     def eat(self,token_type):
-        # print(self.current_token.value_type,token_type)
         if self.current_token.value_type == token_type:
             self.current_token = self.lexer.get_next_token()
         else:

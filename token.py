@@ -32,7 +32,7 @@ class Lexer:
             if self.current_char ==':' and self.peek() =='=':
                 self.advance()
                 self.advance()
-                return Token(ASSIGN,':=')
+                return Token(TokenType.ASSIGN,':=',self.lineno,self.column)
             # if self.current_char == '+':
             #     self.advance()
             #     return Token(PLUS,char)
@@ -73,7 +73,7 @@ class Lexer:
                 token = Token(token_type,token_type.value,self.lineno,self.column)
                 self.advance()
                 return token
-        return Token(EOF,None)
+        return Token(TokenType.EOF,None)
 
     def peek(self):
         pos = self.pos + 1  # 获取下一个位置
@@ -116,8 +116,8 @@ class Lexer:
                     result += self.current_char
                     self.advance()
                
-                return Token(REAL_CONST,float(result))
-        return Token(INTEGER_CONST,int(result))  # 返回数字  
+                return Token(TokenType.REAL_CONST,float(result),self.lineno,self.column)
+        return Token(TokenType.INTEGER_CONST,int(result),self.lineno,self.column)  # 返回数字  
 
     def _id(self): # 获取保留字或赋值名称记号的方法
         result = ''
@@ -125,5 +125,5 @@ class Lexer:
             result += self.current_char
             self.advance()
         upper_result = result.upper()
-        token = RESERVED_KEYWORDS.get(upper_result,Token(ID,result))
+        token = RESERVED_KEYWORDS.get(upper_result,Token(TokenType.ID,result,self.lineno,self.column))
         return token

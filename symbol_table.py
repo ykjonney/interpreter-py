@@ -1,7 +1,5 @@
 from collections import OrderedDict
 
-from . import _SHOULD_LOG_SCOPE
-
 from generic_error import ErrorCode, SemanticError
 
 
@@ -112,9 +110,9 @@ class SourceToSourceCompiler(NodeVisitor):# 修改语义分析器为源到源编
             message=f'{error_code.value} -> {token}',
         )
 
-    def log(self, msg):
-        if _SHOULD_LOG_SCOPE:
-            print(msg)
+    # def log(self, msg):
+    #     if _SHOULD_LOG_SCOPE:
+    #         print(msg)
 
     def visit_BinOperator(self, node):
         left = self.visit(node.left)
@@ -154,6 +152,7 @@ class SourceToSourceCompiler(NodeVisitor):# 修改语义分析器为源到源编
         if node.params:
             result_str +='(' # 添加左括号到输出内容
         formal_params = []  # 形参列表
+
         for param in node.params: # 遍历过程的形式参数列表
             param_type = self.current_scope.lookup(param.var_type.name) # 获取参数类型
             param_name = param.var_name.name # 获取参数名称
@@ -210,6 +209,21 @@ class SourceToSourceCompiler(NodeVisitor):# 修改语义分析器为源到源编
             if result:
                 results.append(result)
         return '\n'.join(results)
+
+    def visit_ProcedureCall(self, node): #过程调用方法
+        result_str = f'{node.proc_name}{self.current_scope.scope_level}'
+        result_str +='('
+        params=[]
+        proc_symbol = self.current_scope.lookup(node.proc_name)
+        node.proc_symbol = proc_symbol
+        if len(proc_symbol.params) != len(node.actual_params): #判断参数个数
+            self.error(ErrorCode.PARAMS_UNMATCH,node)
+        for param_node in node.actual_params:
+            result = self.visit(param_node)
+            params.append(f'{result}')
+        result_str += ','.join(params)
+        result_str +=');\n'
+        return result_str
 
     def visit_NoOperator(self, node):  # 添加与访问变量声明相关的访问方法
         pass

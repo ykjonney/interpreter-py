@@ -91,10 +91,10 @@ class TokenType(Enum):
 
 def _build_reserved_words():
     tt_list = list(TokenType)
-    star_index = tt_list.index(PROGRAM)
-    end_index = tt_list.index(END)
+    star_index = tt_list.index(TokenType.PROGRAM)
+    end_index = tt_list.index(TokenType.END)
     reserved_keywords={
-        token_type.value:token_type
+        token_type.value:Token(token_type,token_type.value)
         for token_type in tt_list[star_index:end_index+1]
     }
     return reserved_keywords

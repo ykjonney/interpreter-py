@@ -5,6 +5,7 @@ class ErrorCode(Enum):
     UNEXPECTED_TOKEN = 'Unexpected token'
     ID_NOT_FOUND     = 'Identifier not found'
     DUPLICATE_ID     = 'Duplicate id found'
+    PARAMS_UNMATCH   = 'Parmas not match '
 
 
 class Error(Exception):
